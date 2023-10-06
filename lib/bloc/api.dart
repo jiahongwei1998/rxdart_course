@@ -18,13 +18,17 @@ class Api {
     if (cachedResults != null) {
       return cachedResults;
     }
-    // We don't have hte values cached, let's call APIs
+    // We don't have the values cached, let's call APIs
     // Start by calling persons API
-    final persons = await _getJson('http://127.0.0.1:5500/apis/persons.json')
+    /// If you're running the server locally and using the Android emulator,
+    /// then your server endpoint should be 10.0.2.2:5500 instead of
+    /// localhost:5500 as AVD uses 10.0.2.2 as an alias to your host loopback
+    /// interface (i.e) localhost
+    final persons = await _getJson('http://10.0.2.2:5500/apis/persons.json')
         .then((json) => json.map((e) => Person.fromJson(e)));
     _persons = persons.toList();
     // Then call animals API
-    final animals = await _getJson('http://127.0.0.1:5500/apis/animals.json')
+    final animals = await _getJson('http://10.0.2.2:5500/apis/animals.json')
         .then((json) => json.map((e) => Animal.fromJson(e)));
     _animals = animals.toList();
 
