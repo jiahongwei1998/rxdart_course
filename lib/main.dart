@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:rxdart_course/views/home_page.dart';
 
 void main() {
   runApp(const App());
@@ -19,6 +18,22 @@ class App extends StatelessWidget {
       ),
       home: const HomePage(),
       debugShowCheckedModeBanner: false,
+    );
+  }
+}
+
+void testIt() async {}
+
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    testIt();
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Home Page'),
+      ),
     );
   }
 }
