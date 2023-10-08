@@ -28,20 +28,16 @@ class App extends StatelessWidget {
 }
 
 void testIt() async {
-  final steam1 = Stream.periodic(
+  final stream1 = Stream.periodic(
     const Duration(seconds: 1),
     (count) => 'Steam 1, count = $count',
-  );
-  final steam2 = Stream.periodic(
-    const Duration(seconds: 3),
+  ).take(3);
+  final stream2 = Stream.periodic(
+    const Duration(seconds: 1),
     (count) => 'Steam 2, count = $count',
   );
-  final combined = Rx.combineLatest2(
-    steam1,
-    steam2,
-    (one, two) => 'One = ($one), two = ($two)',
-  );
-  await for (final value in combined) {
+  final result = stream1.concatWith([stream2]);
+  await for (final value in result) {
     value.log();
   }
 }
