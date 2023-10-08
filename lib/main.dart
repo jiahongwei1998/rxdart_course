@@ -36,7 +36,11 @@ void testIt() async {
     const Duration(seconds: 3),
     (count) => 'Steam 2, count = $count',
   );
-  final result = stream1.mergeWith([stream2]);
+  final result = Rx.zip2(
+    stream1,
+    stream2,
+    (a, b) => 'Zipped result: A=($a), B=($b)',
+  );
   await for (final value in result) {
     debugPrint('==============');
     value.log();
