@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:rxdart/rxdart.dart';
+
+extension Log on Object {
+  void log() => debugPrint(toString());
+}
 
 void main() {
   runApp(const App());
@@ -22,7 +27,24 @@ class App extends StatelessWidget {
   }
 }
 
-void testIt() async {}
+void testIt() async {
+  final steam1 = Stream.periodic(
+    const Duration(seconds: 1),
+    (count) => 'Steam 1, count = $count',
+  );
+  final steam2 = Stream.periodic(
+    const Duration(seconds: 3),
+    (count) => 'Steam 2, count = $count',
+  );
+  final combined = Rx.combineLatest2(
+    steam1,
+    steam2,
+    (one, two) => 'One = ($one), two = ($two)',
+  );
+  await for (final value in combined) {
+    value.log();
+  }
+}
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
