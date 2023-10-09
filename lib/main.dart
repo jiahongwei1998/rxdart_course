@@ -27,36 +27,60 @@ class App extends StatelessWidget {
   }
 }
 
-void testIt() async {
-  final stream1 = Stream.periodic(
-    const Duration(seconds: 1),
-    (count) => 'Steam 1, count = $count',
-  );
-  final stream2 = Stream.periodic(
-    const Duration(seconds: 3),
-    (count) => 'Steam 2, count = $count',
-  );
-  final result = Rx.zip2(
-    stream1,
-    stream2,
-    (a, b) => 'Zipped result: A=($a), B=($b)',
-  );
-  await for (final value in result) {
-    debugPrint('==============');
-    value.log();
-  }
-}
-
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  late final BehaviorSubject<DateTime> subject;
+  late final Stream<String> streamOfStrings;
+
+  @override
+  void initState() {
+    super.initState();
+    subject = BehaviorSubject<DateTime>();
+    streamOfStrings = subject.switchMap(
+      (dateTime) => Stream.periodic(
+        const Duration(seconds: 1),
+        (count) => 'Stream count = $count, dateTime = $dateTime',
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    subject.close();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    testIt();
     return Scaffold(
       appBar: AppBar(
         title: const Center(child: Text('Home Page')),
       ),
+      body: Column(children: [
+        StreamBuilder<String>(
+          stream: streamOfStrings,
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              final string = snapshot.requireData;
+              return Text(string);
+            } else {
+              return const Text('Waiting for the button to be pressed');
+            }
+          },
+        ),
+        TextButton(
+          onPressed: () {
+            subject.add(DateTime.now());
+          },
+          child: const Text('Start the stream'),
+        ),
+      ]),
     );
   }
 }
