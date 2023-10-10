@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:rxdart/rxdart.dart';
 
 extension Log on Object {
@@ -25,16 +28,6 @@ class App extends StatelessWidget {
       debugShowCheckedModeBanner: false,
     );
   }
-}
-
-enum TypeOfTing { animal, person }
-
-@immutable
-class Thing {
-  final TypeOfTing type;
-  final String name;
-
-  const Thing({required this.type, required this.name});
 }
 
 @immutable
@@ -77,51 +70,14 @@ class Bloc {
   }
 }
 
-typedef AsyncSnapshotBuilderCallback<T> = Widget Function(
-  BuildContext context,
-  T? value,
-);
-
-class AsyncSnapshotBuilder<T> extends StatelessWidget {
-  final Stream<T> stream;
-  final AsyncSnapshotBuilderCallback<T>? onNone;
-  final AsyncSnapshotBuilderCallback<T>? onWaiting;
-  final AsyncSnapshotBuilderCallback<T>? onActive;
-  final AsyncSnapshotBuilderCallback<T>? onDone;
-
-  const AsyncSnapshotBuilder({
-    super.key,
-    required this.stream,
-    this.onNone,
-    this.onWaiting,
-    this.onActive,
-    this.onDone,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<T>(
-      stream: stream,
-      builder: (context, snapshot) {
-        switch (snapshot.connectionState) {
-          case ConnectionState.none:
-            final callback = onNone ?? (_, __) => const SizedBox();
-            return callback(context, snapshot.data);
-          case ConnectionState.waiting:
-            final callback =
-                onWaiting ?? (_, __) => const CircularProgressIndicator();
-            return callback(context, snapshot.data);
-          case ConnectionState.active:
-            final callback = onActive ?? (_, __) => const SizedBox();
-            return callback(context, snapshot.data);
-          case ConnectionState.done:
-            final callback = onDone ?? (_, __) => const SizedBox();
-            return callback(context, snapshot.data);
-        }
-      },
-    );
-  }
+Stream<String> getNames({required String filePath}) {
+  final names = rootBundle.loadString(filePath);
+  return Stream.fromFuture(names).transform(const LineSplitter());
 }
+
+Stream<String> getAllNames() => getNames(filePath: 'assets/texts/cats.txt')
+    .concatWith([getNames(filePath: 'assets/texts/dogs.txt')]).delay(
+        const Duration(seconds: 3));
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -151,30 +107,29 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: const Center(child: Text('CombineLatest with RxDart')),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          children: [
-            TextField(
-              decoration: const InputDecoration(
-                hintText: 'Enter first name here...',
-              ),
-              onChanged: bloc.setFirstName.add,
-            ),
-            TextField(
-              decoration: const InputDecoration(
-                hintText: 'Enter last name here...',
-              ),
-              onChanged: bloc.setLastName.add,
-            ),
-            AsyncSnapshotBuilder(
-              stream: bloc.fullName,
-              onActive: (context, value) {
-                return Text(value ?? '');
-              },
-            ),
-          ],
-        ),
+      body: FutureBuilder<List<String>>(
+        future: getAllNames().toList(),
+        builder: (context, snapshot) {
+          switch (snapshot.connectionState) {
+            case ConnectionState.none:
+            case ConnectionState.waiting:
+            case ConnectionState.active:
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            case ConnectionState.done:
+              final names = snapshot.requireData;
+              return ListView.separated(
+                itemBuilder: (context, index) => ListTile(
+                  title: Text(names[index]),
+                ),
+                separatorBuilder: (_, __) => const Divider(
+                  color: Colors.black,
+                ),
+                itemCount: names.length,
+              );
+          }
+        },
       ),
     );
   }
