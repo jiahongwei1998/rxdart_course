@@ -36,12 +36,29 @@ class LoadingScreen {
               color: Colors.white,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Padding(
-              padding: EdgeInsets.all(16),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  children: [],
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 10),
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 10),
+                    StreamBuilder(
+                      stream: _text.stream,
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData) {
+                          return Text(
+                            snapshot.requireData,
+                            textAlign: TextAlign.center,
+                          );
+                        }
+                        return Container();
+                      },
+                    )
+                  ],
                 ),
               ),
             ),
