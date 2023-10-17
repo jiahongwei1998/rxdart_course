@@ -67,6 +67,12 @@ class AuthBloc {
   final Sink<RegisterCommand> register;
   final Sink<void> logout;
 
+  void dispose() {
+    login.close();
+    register.close();
+    logout.close();
+  }
+
   const AuthBloc._({
     required this.authStatus,
     required this.authError,
