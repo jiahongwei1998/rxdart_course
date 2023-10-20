@@ -28,6 +28,8 @@ class Contact {
         lastName = json[_Keys.lastNameKey] as String,
         phoneNumber = json[_Keys.phoneNumberKey] as String;
 
+  String get fullName => '$firstName $lastName';
+
   @override
   String toString() => '$firstName $lastName';
 }

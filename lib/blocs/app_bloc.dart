@@ -73,16 +73,20 @@ class AppBloc {
     _contactsBloc.deleteContact.add(contact);
   }
 
-  void createContact({
-    required String firstName,
-    required String lastName,
-    required String phoneNumber,
-  }) {
+  void createContact(
+    String firstName,
+    String lastName,
+    String phoneNumber,
+  ) {
     _contactsBloc.createContact.add(Contact.withoutId(
       firstName: firstName,
       lastName: lastName,
       phoneNumber: phoneNumber,
     ));
+  }
+
+  void deleteAccount() {
+    //TODO: we haven't done the delete accoun yet.
   }
 
   void logout() {

@@ -11,6 +11,22 @@ class LoadingScreen {
 
   LoadingScreenController? controller;
 
+  void show({
+    required BuildContext context,
+    required String text,
+  }) {
+    if (controller?.update(text) ?? false) {
+      return;
+    } else {
+      controller = _showOverlay(context: context, text: text);
+    }
+  }
+
+  void hide() {
+    controller?.close();
+    controller = null;
+  }
+
   LoadingScreenController _showOverlay({
     required BuildContext context,
     required String text,

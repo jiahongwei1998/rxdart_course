@@ -1,14 +1,23 @@
-import 'dart:convert';
+import 'dart:async';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:rxdart/rxdart.dart';
+import 'package:rxdart_course/blocs/app_bloc.dart';
+import 'package:rxdart_course/blocs/auth_bloc/auth_error.dart';
+import 'package:rxdart_course/blocs/views_bloc/current_view.dart';
+import 'package:rxdart_course/dialogs/auth_error_dialog.dart';
+import 'package:rxdart_course/firebase_options.dart';
+import 'package:rxdart_course/loading/loading_screen.dart';
+import 'package:rxdart_course/views/contacts_list_view.dart';
+import 'package:rxdart_course/views/login_view.dart';
+import 'package:rxdart_course/views/new_contact.dart';
+import 'package:rxdart_course/views/register_view.dart';
 
-extension Log on Object {
-  void log() => debugPrint(toString());
-}
-
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const App());
 }
 
@@ -30,55 +39,6 @@ class App extends StatelessWidget {
   }
 }
 
-@immutable
-class Bloc {
-  final Sink<String?> setFirstName;
-  final Sink<String?> setLastName;
-  final Stream<String> fullName;
-
-  const Bloc._({
-    required this.setFirstName,
-    required this.setLastName,
-    required this.fullName,
-  });
-
-  void dispose() {
-    setFirstName.close();
-    setLastName.close();
-  }
-
-  factory Bloc() {
-    final firstNameSubject = BehaviorSubject<String?>();
-    final lastNameSubject = BehaviorSubject<String?>();
-
-    final Stream<String> fullName = Rx.combineLatest2(
-        firstNameSubject.startWith(null), lastNameSubject.startWith(null),
-        (firstName, lastName) {
-      if (firstName != null &&
-          firstName.isNotEmpty &&
-          lastName != null &&
-          lastName.isNotEmpty) {
-        return '$firstName $lastName';
-      } else {
-        return 'Both first and last name must be provided';
-      }
-    });
-    return Bloc._(
-        setFirstName: firstNameSubject.sink,
-        setLastName: lastNameSubject.sink,
-        fullName: fullName);
-  }
-}
-
-Stream<String> getNames({required String filePath}) {
-  final names = rootBundle.loadString(filePath);
-  return Stream.fromFuture(names).transform(const LineSplitter());
-}
-
-Stream<String> getAllNames() => getNames(filePath: 'assets/texts/cats.txt')
-    .concatWith([getNames(filePath: 'assets/texts/dogs.txt')]).delay(
-        const Duration(seconds: 3));
-
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -87,50 +47,93 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  late final Bloc bloc;
+  late final AppBloc appBloc;
+  StreamSubscription<AuthError?>? _authErrorSub;
+  StreamSubscription<bool>? _isLoadingSub;
 
   @override
   void initState() {
     super.initState();
-    bloc = Bloc();
+    appBloc = AppBloc();
   }
 
   @override
   void dispose() {
-    bloc.dispose();
+    appBloc.contacts;
+    _authErrorSub?.cancel();
+    _isLoadingSub?.cancel();
     super.dispose();
+  }
+
+  void handleAuthErrors(BuildContext context) async {
+    await _authErrorSub?.cancel();
+    _authErrorSub = appBloc.authError.listen((event) {
+      final AuthError? authError = event;
+      if (authError == null) {
+        return;
+      }
+      showAuthError(authError: authError, context: context);
+    });
+  }
+
+  void setupLoadingScreen(BuildContext context) async {
+    await _isLoadingSub?.cancel();
+    _isLoadingSub = appBloc.isLoading.listen((isLoading) {
+      if (isLoading) {
+        LoadingScreen.instance().show(context: context, text: 'Loading');
+      } else {
+        LoadingScreen.instance().hide();
+      }
+    });
+  }
+
+  Widget getHomePage() {
+    return StreamBuilder<CurrentView>(
+      stream: appBloc.currentView,
+      builder: (context, snapshot) {
+        switch (snapshot.connectionState) {
+          case ConnectionState.none:
+          case ConnectionState.waiting:
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          case ConnectionState.active:
+          case ConnectionState.done:
+            final currentView = snapshot.requireData;
+            switch (currentView) {
+              case CurrentView.login:
+                return LoginView(
+                  login: appBloc.login,
+                  goToRegisterView: appBloc.goToContactListView,
+                );
+              case CurrentView.register:
+                return RegisterView(
+                  register: appBloc.register,
+                  goToLoginView: appBloc.goToRegisterView,
+                );
+              case CurrentView.contactList:
+                return ContactsListView(
+                  logout: appBloc.logout,
+                  deleteAccount: appBloc.deleteAccount,
+                  deleteContact: appBloc.deleteContact,
+                  createNewContact: appBloc.goToCreateContactView,
+                  contacts: appBloc.contacts,
+                );
+              case CurrentView.createContact:
+                return NewContactView(
+                  createContact: appBloc.createContact,
+                  goBack: appBloc.goToContactListView,
+                );
+            }
+        }
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Center(child: Text('CombineLatest with RxDart')),
-      ),
-      body: FutureBuilder<List<String>>(
-        future: getAllNames().toList(),
-        builder: (context, snapshot) {
-          switch (snapshot.connectionState) {
-            case ConnectionState.none:
-            case ConnectionState.waiting:
-            case ConnectionState.active:
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
-            case ConnectionState.done:
-              final names = snapshot.requireData;
-              return ListView.separated(
-                itemBuilder: (context, index) => ListTile(
-                  title: Text(names[index]),
-                ),
-                separatorBuilder: (_, __) => const Divider(
-                  color: Colors.black,
-                ),
-                itemCount: names.length,
-              );
-          }
-        },
-      ),
-    );
+    handleAuthErrors(context);
+    setupLoadingScreen(context);
+    return getHomePage();
   }
 }
