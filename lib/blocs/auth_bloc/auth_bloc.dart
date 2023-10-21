@@ -66,11 +66,13 @@ class AuthBloc {
   final Sink<LoginCommand> login;
   final Sink<RegisterCommand> register;
   final Sink<void> logout;
+  final Sink<void> deleteAccount;
 
   void dispose() {
     login.close();
     register.close();
     logout.close();
+    deleteAccount.close();
   }
 
   const AuthBloc._({
@@ -81,15 +83,18 @@ class AuthBloc {
     required this.login,
     required this.register,
     required this.logout,
+    required this.deleteAccount,
   });
 
   factory AuthBloc() {
     final isLoading = BehaviorSubject<bool>();
-    final Stream<AuthStatus> authStatus = FirebaseAuth.instance
-        .authStateChanges()
-        .map((user) => user != null
-            ? const AuthStatusLoggedIn()
-            : const AuthStatusLoggedOut());
+    final Stream<AuthStatus> authStatus =
+        FirebaseAuth.instance.authStateChanges().map((user) {
+      final loginStatus = user != null
+          ? const AuthStatusLoggedIn()
+          : const AuthStatusLoggedOut();
+      return loginStatus;
+    });
 
     final Stream<String?> userId = FirebaseAuth.instance
         .authStateChanges()
@@ -144,11 +149,26 @@ class AuthBloc {
       }
     }).setLoadingTo(false, onSink: isLoading);
 
+    // Delete account
+    final deleteAccount = BehaviorSubject<void>();
+    final Stream<AuthError?> deleteAccountError =
+        deleteAccount.setLoadingTo(true, onSink: isLoading).asyncMap((_) async {
+      try {
+        await FirebaseAuth.instance.currentUser?.delete();
+        return null;
+      } on FirebaseAuthException catch (e) {
+        return AuthError.from(e);
+      } catch (_) {
+        return const AuthErrorUnknown();
+      }
+    }).setLoadingTo(false, onSink: isLoading);
+
     // authError = loginError + registerError + logoutError
     final Stream<AuthError?> authError = Rx.merge([
       loginError,
       registerError,
       logoutError,
+      deleteAccountError,
     ]);
 
     return AuthBloc._(
@@ -159,6 +179,7 @@ class AuthBloc {
       login: login,
       register: register,
       logout: logout,
+      deleteAccount: deleteAccount,
     );
   }
 }

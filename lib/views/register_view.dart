@@ -40,7 +40,7 @@ class RegisterView extends HookWidget {
               decoration: const InputDecoration(
                   hintText: 'Enter your password here...'),
               obscureText: true,
-              obscuringCharacter: '🔘',
+              // obscuringCharacter: '🔘',
               keyboardAppearance: Brightness.dark,
             ),
             TextButton(
@@ -52,7 +52,7 @@ class RegisterView extends HookWidget {
               child: const Text('Register'),
             ),
             TextButton(
-              onPressed: () => goToLoginView,
+              onPressed: goToLoginView,
               child: const Text('Already registered et? Login here!'),
             ),
           ],

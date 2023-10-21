@@ -59,7 +59,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
-    appBloc.contacts;
+    appBloc.dispose();
     _authErrorSub?.cancel();
     _isLoadingSub?.cancel();
     super.dispose();
@@ -80,7 +80,7 @@ class _HomePageState extends State<HomePage> {
     await _isLoadingSub?.cancel();
     _isLoadingSub = appBloc.isLoading.listen((isLoading) {
       if (isLoading) {
-        LoadingScreen.instance().show(context: context, text: 'Loading');
+        LoadingScreen.instance().show(context: context, text: 'Loading...');
       } else {
         LoadingScreen.instance().hide();
       }
@@ -104,12 +104,12 @@ class _HomePageState extends State<HomePage> {
               case CurrentView.login:
                 return LoginView(
                   login: appBloc.login,
-                  goToRegisterView: appBloc.goToContactListView,
+                  goToRegisterView: appBloc.goToRegisterView,
                 );
               case CurrentView.register:
                 return RegisterView(
                   register: appBloc.register,
-                  goToLoginView: appBloc.goToRegisterView,
+                  goToLoginView: appBloc.goToLoginView,
                 );
               case CurrentView.contactList:
                 return ContactsListView(

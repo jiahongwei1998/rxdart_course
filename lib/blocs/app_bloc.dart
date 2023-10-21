@@ -38,16 +38,20 @@ class AppBloc {
     final viewsBloc = ViewsBloc();
     final contactsBloc = ContactsBloc();
 
-    // Pass userid from auth block into contacts bloc
+    // Pass userid from auth bloc into contacts bloc
     final userIdChanges = authBloc.userId.listen((String? userId) {
       contactsBloc.userId.add(userId);
     });
 
     // Calculate the current view
-    final Stream<CurrentView> currentViewBasedOnAuthStatus = authBloc.authStatus
-        .map<CurrentView>((authStatus) => authStatus is AuthStatusLoggedIn
-            ? CurrentView.contactList
-            : CurrentView.login);
+    final Stream<CurrentView> currentViewBasedOnAuthStatus =
+        authBloc.authStatus.map<CurrentView>((authStatus) {
+      final view = authStatus is AuthStatusLoggedIn
+          ? CurrentView.contactList
+          : CurrentView.login;
+      debugPrint('AppBloc: next view: $view');
+      return view;
+    });
 
     final Stream<CurrentView> currentView = Rx.merge([
       currentViewBasedOnAuthStatus,
@@ -64,7 +68,7 @@ class AppBloc {
       contactsBloc: contactsBloc,
       currentView: currentView,
       isLoading: isLoading.asBroadcastStream(),
-      authError: authBloc.authError,
+      authError: authBloc.authError.asBroadcastStream(),
       userIdChanges: userIdChanges,
     );
   }
@@ -86,7 +90,8 @@ class AppBloc {
   }
 
   void deleteAccount() {
-    //TODO: we haven't done the delete accoun yet.
+    _contactsBloc.deleteAllContacts.add(null);
+    _authBloc.deleteAccount.add(null);
   }
 
   void logout() {
@@ -103,6 +108,7 @@ class AppBloc {
   }
 
   void login(String email, String password) {
+    debugPrint('logging in with $email');
     _authBloc.login.add(LoginCommand(
       email: email,
       password: password,
@@ -117,7 +123,7 @@ class AppBloc {
 
   void goToRegisterView() => _viewsBloc.goToView.add(CurrentView.register);
 
-  void goToLoginVIew() => _viewsBloc.goToView.add(CurrentView.login);
+  void goToLoginView() => _viewsBloc.goToView.add(CurrentView.login);
 
   void dispose() {
     _authBloc.dispose();

@@ -28,6 +28,7 @@ class MainPopupMenuButton extends StatelessWidget {
             break;
           case MenuAction.deleteAccount:
             final shouldDeleteAccount =
+                // ignore: use_build_context_synchronously
                 await showDeleteAccountDialog(context: context);
             if (shouldDeleteAccount) {
               deleteAccount();

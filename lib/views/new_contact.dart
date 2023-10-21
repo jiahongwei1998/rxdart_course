@@ -23,6 +23,7 @@ class NewContactView extends HookWidget {
     );
     return Scaffold(
       appBar: AppBar(
+        title: const Text('Create a new contact'),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: goBack,

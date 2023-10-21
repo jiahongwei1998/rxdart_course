@@ -52,7 +52,7 @@ class LoginView extends HookWidget {
               child: const Text('Log in'),
             ),
             TextButton(
-              onPressed: () => goToRegisterView,
+              onPressed: goToRegisterView,
               child: const Text('Not registered et? Register here!'),
             ),
           ],
